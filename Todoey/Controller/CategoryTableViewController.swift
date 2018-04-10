@@ -7,17 +7,17 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 
 class CategoryTableViewController: UITableViewController {
 
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    let realm = try! Realm()
     var categoryArray = [Category]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        loadItems()
+//        loadItems()
 
     }
     //MARK: TableView Delegate Methods
@@ -67,37 +67,40 @@ class CategoryTableViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add", style: .default) { (action) in
             
-            let category = Category(context: self.context)
+            let category = Category()
             
             category.name = (textfield.text?.isEmpty)! ? "New Category" : textfield.text!
-            
-            
             self.categoryArray.append(category)
-            self.saveItems()
+             self.save(category: category)
+            
+           
             
         }
         alert.addAction(action)
         self.present(alert, animated: true, completion: nil)
     }
-    func saveItems()
+    func save(category : Category)
     {
         do {
-            try context.save()
+            try realm.write
+            {
+                realm.add(category)
+            }
         }catch{
             print("Error")
         }
         tableView.reloadData()
     }
-    func loadItems(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
-        
-        do {
-            categoryArray = try context.fetch(request)
-        }catch{
-            print("Error")
-        }
-        tableView.reloadData()
-        
-    }
+//    func loadItems(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
+//
+//        do {
+//            categoryArray = try context.fetch(request)
+//        }catch{
+//            print("Error")
+//        }
+//        tableView.reloadData()
+//
+//    }
     
 }
 
