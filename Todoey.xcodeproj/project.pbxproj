@@ -13,6 +13,7 @@
 		191F018F2073D81A00202034 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 191F018E2073D81A00202034 /* Assets.xcassets */; };
 		191F01922073D81A00202034 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 191F01902073D81A00202034 /* LaunchScreen.storyboard */; };
 		198D4E792079EA0400027483 /* DataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 198D4E772079EA0400027483 /* DataModel.xcdatamodeld */; };
+		198D4E9C207BC03B00027483 /* CategoryTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 198D4E9B207BC03B00027483 /* CategoryTableViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		191F01912073D81A00202034 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		191F01932073D81A00202034 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		198D4E782079EA0400027483 /* DataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = DataModel.xcdatamodel; sourceTree = "<group>"; };
+		198D4E9B207BC03B00027483 /* CategoryTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryTableViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +70,7 @@
 		198D4E732079E98000027483 /* Controller */ = {
 			isa = PBXGroup;
 			children = (
+				198D4E9B207BC03B00027483 /* CategoryTableViewController.swift */,
 				191F01872073D81A00202034 /* AppDelegate.swift */,
 				191F01892073D81A00202034 /* TodoListViewController.swift */,
 			);
@@ -174,6 +177,7 @@
 				191F018A2073D81A00202034 /* TodoListViewController.swift in Sources */,
 				198D4E792079EA0400027483 /* DataModel.xcdatamodeld in Sources */,
 				191F01882073D81A00202034 /* AppDelegate.swift in Sources */,
+				198D4E9C207BC03B00027483 /* CategoryTableViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

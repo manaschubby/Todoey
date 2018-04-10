@@ -11,6 +11,11 @@ import CoreData
 
 class TodoListViewController: UITableViewController, UISearchBarDelegate {
 
+    var selectedCategory : Category? {
+        didSet{
+            loadItems() 
+        }
+    }
     var itemArray = [Item]()
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
@@ -73,6 +78,7 @@ class TodoListViewController: UITableViewController, UISearchBarDelegate {
             
             let newItem = Item(context: self.context)
             newItem.title = (alert.textFields?.first?.text!)!
+            newItem.parentCategory = self.selectedCategory
             self.itemArray.append(newItem)
             self.saveData()
            
@@ -94,9 +100,19 @@ class TodoListViewController: UITableViewController, UISearchBarDelegate {
             print("UnSuccesful")
         }
     }
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest())
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate : NSPredicate? = nil)
     {
 
+       
+        
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        if let additionalPredicate = predicate{
+            let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [additionalPredicate, categoryPredicate])
+            request.predicate = compoundPredicate
+        }else{
+            request.predicate = categoryPredicate
+        }
         
         do{
             itemArray =  try context.fetch(request)
@@ -122,7 +138,7 @@ extension TodoListViewController{
         
         request.sortDescriptors = [sotrtDiscriptor]
         
-        loadItems(with: request)
+        loadItems(with: request, predicate: predicate)
         tableView.reloadData()
     }
     
