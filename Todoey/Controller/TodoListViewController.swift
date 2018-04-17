@@ -7,29 +7,35 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
+import SwipeCellKit
+import ChameleonFramework
 
 class TodoListViewController: UITableViewController, UISearchBarDelegate {
 
     var selectedCategory : Category? {
         didSet{
-//            loadItems() 
+            loadItems()
         }
     }
-    var itemArray = [Item]()
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    var todoItems : Results<Item>?
+    let realm = try! Realm()
+    @IBOutlet var searchBar : UISearchBar!
+    
     
     override func viewDidLoad()
     {
         super.viewDidLoad()
         
         
-//        loadItems()
-       
+        loadItems()
+        title = selectedCategory?.name
+        tableView.separatorStyle = .none
+        navigationController?.navigationBar.tintColor = ContrastColorOf(backgroundColor:  UIColor(hexString: selectedCategory?.color), returnFlat: true)
+        navigationController?.navigationBar.largeTitleTextAttributes = [NSAttributedStringKey.foregroundColor : ContrastColorOf(backgroundColor:  UIColor(hexString: selectedCategory?.color), returnFlat: true)]
+        searchBar.barTintColor = UIColor(hexString: selectedCategory?.color)
+        navigationController?.navigationBar.barTintColor = UIColor(hexString: selectedCategory?.color)
         
-        
-
     }
 
     // ///////////////////////
@@ -37,25 +43,40 @@ class TodoListViewController: UITableViewController, UISearchBarDelegate {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
       
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! SwipeTableViewCell
+        cell.delegate = self
         
-        cell.textLabel?.text = itemArray[indexPath.row].title
-        
-        cell.accessoryType = itemArray[indexPath.row].done ? .checkmark : .none
-        
+        if let item = todoItems?[indexPath.row]{
+            cell.textLabel?.text = item.title
+            
+            cell.backgroundColor = UIColor(hexString: selectedCategory?.color).darken(byPercentage: CGFloat(indexPath.row) / CGFloat(todoItems!.count))
+            cell.textLabel?.textColor = ContrastColorOf(backgroundColor: cell.backgroundColor!, returnFlat: true)
+            cell.accessoryType = item.done ? .checkmark : .none
+        }else{
+            cell.textLabel?.text = "No items Added"
+        }
         return cell
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
+        return todoItems?.count ?? 1
         
     }
     
     //MARK: TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
-        
-        saveData()
+//        todoItems[indexPath.row].done = !todoItems[indexPath.row].done
+//
+//        saveData()
+        if let item = todoItems?[indexPath.row] {
+            do{
+                try realm.write {
+                    item.done = !item.done
+                }
+            }catch{
+                print("error saving Done status \(error)")
+            }
+        }
         
         tableView.reloadData()
         
@@ -75,14 +96,26 @@ class TodoListViewController: UITableViewController, UISearchBarDelegate {
         
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
+            do{
+                if let category = self.selectedCategory
+                {
+                
+                    try self.realm.write
+                    {
+                        let newItem = Item()
+                        newItem.title = (alert.textFields?.first?.text!)!
+                        
+                        category.items.append(newItem)
+                    }
+                
+                    self.todoItems = self.selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
             
-            let newItem = Item()
-            newItem.title = (alert.textFields?.first?.text!)!
-//            newItem.parentCategory = self.selectedCategory
-            self.itemArray.append(newItem)
-            self.saveData()
-           
-            self.tableView.reloadData()
+                    self.tableView.reloadData()
+                }
+            } catch
+            {
+                print("Error Saving Items")
+            }
         }
         alert.addAction(action)
         self.present(alert, animated: true, completion: nil)
@@ -91,68 +124,62 @@ class TodoListViewController: UITableViewController, UISearchBarDelegate {
     
     //MARK: Model Manupalation Methods
     
-    func saveData(){
-        
-        do{
-            try context.save()
-        }
-        catch{
-            print("UnSuccesful")
-        }
+    
+    func loadItems()
+    {
+        todoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
     }
-//    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate : NSPredicate? = nil)
-//    {
-//
-//
-//
-//        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
-//
-//        if let additionalPredicate = predicate{
-//            let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [additionalPredicate, categoryPredicate])
-//            request.predicate = compoundPredicate
-//        }else{
-//            request.predicate = categoryPredicate
-//        }
-//
-//        do{
-//            itemArray =  try context.fetch(request)
-//        }catch{
-//            print("Error")
-//        }
-//
-//
-//    }
 }
 
 //MARK: Extension for Search Bar Methods
 
-//extension TodoListViewController{
-//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-//        let request : NSFetchRequest<Item> = Item.fetchRequest()
-//
-//        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-//
-//        request.predicate = predicate
-//
-//        let sotrtDiscriptor = NSSortDescriptor(key: "title", ascending: true)
-//
-//        request.sortDescriptors = [sotrtDiscriptor]
-//
-//        loadItems(with: request, predicate: predicate)
-//        tableView.reloadData()
-//    }
-//
-//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-//        if searchBar.text?.count == 0{
-//            loadItems()
-//            tableView.reloadData()
-//            DispatchQueue.main.async {
-//                searchBar.endEditing(true)
-//            }
-//        }
-//
-//    }
-//}
+extension TodoListViewController{
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar)
+    {
+        todoItems = todoItems?.filter("title CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "date", ascending: true)
+        tableView.reloadData()
+    }
+
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0{
+            loadItems()
+            tableView.reloadData()
+            DispatchQueue.main.async {
+                searchBar.endEditing(true)
+            }
+        }
+
+    }
+}
+
+extension TodoListViewController : SwipeTableViewCellDelegate
+{
+    func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> [SwipeAction]?
+    {
+        
+        guard orientation == .right else {
+            return  nil
+        }
+        
+        let action = SwipeAction(style: .destructive, title: "Delete") { (action, indexpath) in
+            try! self.realm.write {
+                self.realm.delete((self.todoItems?[indexPath.row])!)
+                
+            }
+            
+        }
+        
+        return [action]
+    }
+    func tableView(_ tableView: UITableView, editActionsOptionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> SwipeTableOptions {
+        var option = SwipeTableOptions()
+        
+        option.expansionStyle = .destructive
+        
+        return option
+    }
+    
+}
 
 
 

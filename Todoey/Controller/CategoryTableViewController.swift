@@ -8,16 +8,20 @@
 
 import UIKit
 import RealmSwift
+import SwipeCellKit
+import ChameleonFramework
 
 
 class CategoryTableViewController: UITableViewController {
 
     let realm = try! Realm()
-    var categoryArray = [Category]()
+    var categoryArray : Results<Category>?
     
     override func viewDidLoad() {
         super.viewDidLoad()
-//        loadItems()
+        loadItems()
+        tableView.rowHeight = 80.0
+        tableView.separatorStyle = .none
 
     }
     //MARK: TableView Delegate Methods
@@ -29,7 +33,7 @@ class CategoryTableViewController: UITableViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         let destination = segue.destination as! TodoListViewController
         if let indexPath = tableView.indexPathForSelectedRow{
-            destination.selectedCategory = categoryArray[indexPath.row]
+            destination.selectedCategory = categoryArray?[indexPath.row]
         }
     }
     
@@ -40,9 +44,12 @@ class CategoryTableViewController: UITableViewController {
     //TODO: CellForRowAt
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "reuseCategory", for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: "reuseCategory", for: indexPath) as! SwipeTableViewCell
+        cell.delegate = self
         
-        cell.textLabel?.text = categoryArray[indexPath.row].name
+        cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added"
+        cell.textLabel?.textColor = ContrastColorOf(backgroundColor: UIColor(hexString: categoryArray?[indexPath.row].color), returnFlat: true)
+        cell.backgroundColor = UIColor(hexString: categoryArray?[indexPath.row].color)
         
         return cell
     }
@@ -50,7 +57,7 @@ class CategoryTableViewController: UITableViewController {
     
     //TODO: RowsInSection
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categoryArray.count
+        return categoryArray?.count ?? 1
     }
     
 
@@ -70,8 +77,8 @@ class CategoryTableViewController: UITableViewController {
             let category = Category()
             
             category.name = (textfield.text?.isEmpty)! ? "New Category" : textfield.text!
-            self.categoryArray.append(category)
-             self.save(category: category)
+            category.color = UIColor.randomFlat().hexValue()
+            self.save(category: category)
             
            
             
@@ -91,17 +98,41 @@ class CategoryTableViewController: UITableViewController {
         }
         tableView.reloadData()
     }
-//    func loadItems(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
-//
-//        do {
-//            categoryArray = try context.fetch(request)
-//        }catch{
-//            print("Error")
-//        }
-//        tableView.reloadData()
-//
-//    }
+    func loadItems() {
+
+        categoryArray = realm.objects(Category.self)
+        tableView.reloadData()
+
+    }
     
+}
+//MARK: Extension
+extension CategoryTableViewController : SwipeTableViewCellDelegate
+{
+    func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> [SwipeAction]? {
+        guard orientation == .right else {
+            return nil
+        }
+        let deleteAction = SwipeAction(style: .destructive, title: "Delete") { (action, indexpath) in
+            
+            try! self.realm.write {
+                self.realm.delete((self.categoryArray?[indexPath.row])!)
+            }
+           
+            
+        }
+        deleteAction.image = UIImage(named: "delete")
+        
+        return [deleteAction]
+    }
+    
+    func tableView(_ tableView: UITableView, editActionsOptionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> SwipeTableOptions {
+        var options = SwipeTableOptions()
+        options.expansionStyle = .destructive
+        options.transitionStyle = .border
+        return options
+    }
+
 }
 
 
